@@ -2,6 +2,9 @@ import torch
 from typing import Dict, Tuple
 
 BLOCK_SIZE = 3 # Context lenght. How many characters are needed to predict the next one
+CHARACTER_FEATURES_SIZE = 2
+CHARACTERS_NUMBER = 27
+
 END_START_CHARACTER = '.'
 DATASET_PATH = "./names.txt"
 
@@ -10,6 +13,24 @@ def main():
   names = get_dataset(DATASET_PATH)
   _, itos, stoi = build_vocabulary_of_characters(names)
   X, Y = build_dataset(names, itos, stoi)
+  embeddings = create_lookup_table(X)
+
+def create_lookup_table(X: torch.tensor):
+  """
+  Builds the features table associated with the given input X
+
+  Returns:
+    embedding: A tensor of shape (m, l) where m is the number of samples and l is total of features for each character in a given sample (6 in total)
+  """
+
+  # Randomly generates a two dimensional vector for each character
+  characters_features = torch.randn((CHARACTERS_NUMBER, CHARACTER_FEATURES_SIZE)) 
+  
+  # Index each character in the samples with its corresponding features. Its shape is (m, n, k) where m is the number of samples, n the context lenght and k the features size
+  embedding = characters_features[X]; s = embedding.shape
+  embedding = embedding.view(s[0], s[1] * s[2]) # Flatten the resulting embedding to have all the features of all characters in a single row
+
+  return embedding
 
 
 def build_dataset(names: list[str], itos: Dict[int, str], stoi: Dict[str, int]) -> Tuple[torch.Tensor, torch.Tensor]:
