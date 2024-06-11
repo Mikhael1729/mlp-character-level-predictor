@@ -1,5 +1,7 @@
 import torch
 from typing import Dict, Tuple
+import torch.nn.functional as F
+
 
 BLOCK_SIZE = 3 # Context lenght. How many characters are needed to predict the next one
 CHARACTER_FEATURES_SIZE = 2
@@ -13,24 +15,45 @@ def main():
   names = get_dataset(DATASET_PATH)
   _, itos, stoi = build_vocabulary_of_characters(names)
   X, Y = build_dataset(names, itos, stoi)
-  embeddings = create_lookup_table(X)
+  g = torch.Generator().manual_seed(2147483647)
+  embeddings, characters_features = create_lookup_table(X, g)
+  loss, parameters = forward(embeddings, characters_features, Y, g)
 
-def create_lookup_table(X: torch.tensor):
+  print(sum(p.nelement() for p in parameters))
+
+
+def forward(embeddings: torch.Tensor, characters_features: torch.Tensor, Y: torch.Tensor, g: torch.Generator, size = 100) -> Tuple[torch.Tensor, list[torch.Tensor]]:
+  neurons_per_sample = embeddings.shape[1] # 6
+  W1 = torch.randn((neurons_per_sample, size), generator=g)
+  b1 = torch.randn(size, generator=g)
+  a1 = embeddings @ W1 + b1
+  z1 = torch.tanh(a1)
+
+  W2 = torch.randn((size, CHARACTERS_NUMBER), generator=g)
+  b2 = torch.randn(CHARACTERS_NUMBER, generator=g)
+  a1 = z1 @ W2 + b2
+
+  loss = F.cross_entropy(a1, Y)
+
+  return loss, [characters_features, W1, b1, W2, b2]
+
+def create_lookup_table(X: torch.tensor, g: torch.Generator) -> Tuple[torch.Tensor, torch.Tensor]:
   """
   Builds the features table associated with the given input X
 
   Returns:
     embedding: A tensor of shape (m, l) where m is the number of samples and l is total of features for each character in a given sample (6 in total)
   """
+  
 
   # Randomly generates a two dimensional vector for each character
-  characters_features = torch.randn((CHARACTERS_NUMBER, CHARACTER_FEATURES_SIZE)) 
+  characters_features = torch.randn((CHARACTERS_NUMBER, CHARACTER_FEATURES_SIZE), generator=g) 
   
   # Index each character in the samples with its corresponding features. Its shape is (m, n, k) where m is the number of samples, n the context lenght and k the features size
   embedding = characters_features[X]; s = embedding.shape
   embedding = embedding.view(s[0], s[1] * s[2]) # Flatten the resulting embedding to have all the features of all characters in a single row
 
-  return embedding
+  return embedding, characters_features
 
 
 def build_dataset(names: list[str], itos: Dict[int, str], stoi: Dict[str, int]) -> Tuple[torch.Tensor, torch.Tensor]:
