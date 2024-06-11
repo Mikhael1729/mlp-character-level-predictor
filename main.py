@@ -22,6 +22,13 @@ def main():
   print(sum(p.nelement() for p in parameters))
 
 
+def backward(parameters: list[torch.Tensor], loss: torch.Tensor):
+  for parameter in parameters:
+    parameter.grad = None
+
+  loss.backward()
+
+
 def forward(embeddings: torch.Tensor, characters_features: torch.Tensor, Y: torch.Tensor, g: torch.Generator, size = 100) -> Tuple[torch.Tensor, list[torch.Tensor]]:
   neurons_per_sample = embeddings.shape[1] # 6
   W1 = torch.randn((neurons_per_sample, size), generator=g)
