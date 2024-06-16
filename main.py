@@ -11,23 +11,67 @@ END_START_CHARACTER = '.'
 DATASET_PATH = "./names.txt"
 
 
+class Parameters:
+  def __init__(self, features: torch.Tensor, W1: torch.Tensor, b1: torch.Tensor, W2: torch.Tensor, b2: torch.Tensor):
+    self.features = features
+    self.W1 = W1
+    self.b1 = b1
+    self.W2 = W2
+    self.b2 = b2
+
+  def print_count(self):
+    print(sum(p.nelement() for p in self.get_parameters()))
+
+  def prepare_for_backward(self):
+    parameters = self.get_parameters()
+    
+    for parameter in parameters:
+      parameter.requires_grad = True
+
+  def reset_gradients(self):
+    parameters = self.get_parameters()
+
+    for parameter in parameters:
+      parameter.grad = None
+  
+  def get_parameters(self) -> list[torch.Tensor]:
+    return [self.features, self.W1, self.b1, self.W2, self.b2]
+
+
 def main():
   names = get_dataset(DATASET_PATH)
   _, itos, stoi = build_vocabulary_of_characters(names)
   X, Y = build_dataset(names, itos, stoi)
   g = torch.Generator().manual_seed(2147483647)
   embeddings, characters_features = create_lookup_table(X, g)
-  loss, parameters = forward(embeddings, characters_features, Y, g)
+  parameters = create_parameters(g, characters_features, embeddings)
+  gradient_descent(X, Y, parameters)
 
-  print(sum(p.nelement() for p in parameters))
+def gradient_descent(X: torch.Tensor, Y: torch.Tensor, p: Parameters, debug=True, training_steps=1000):
+  p.print_count()
+  p.prepare_for_backward()
 
+  for _ in range(training_steps):
+    embeddings = p.features[X].view(-1, 6)
 
-def backward(parameters: list[torch.Tensor], loss: torch.Tensor):
-  for parameter in parameters:
-    parameter.grad = None
+    # Forward
+    a1 = embeddings @ p.W1 + p.b1
+    z1 = torch.tanh(a1)
 
-  loss.backward()
+    a2 = z1 @ p.W2 + p.b2
 
+    loss = F.cross_entropy(a2, Y)
+
+    # Backward
+    p.reset_gradients()
+    loss.backward()
+
+    # Update
+    for parameter in p.get_parameters():
+      parameter.data += -0.1 * parameter.grad
+
+  if debug:
+    print(f"loss: {loss.item()}")
 
 def forward(embeddings: torch.Tensor, characters_features: torch.Tensor, Y: torch.Tensor, g: torch.Generator, size = 100) -> Tuple[torch.Tensor, list[torch.Tensor]]:
   neurons_per_sample = embeddings.shape[1] # 6
@@ -43,6 +87,21 @@ def forward(embeddings: torch.Tensor, characters_features: torch.Tensor, Y: torc
   loss = F.cross_entropy(a1, Y)
 
   return loss, [characters_features, W1, b1, W2, b2]
+
+def create_parameters(g: torch.Generator, characters_features: torch.Tensor, embeddings : torch.Tensor, second_layer_size = 100):
+  neurons_per_sample = embeddings.shape[1] # 6
+  W1 = torch.randn((neurons_per_sample, second_layer_size), generator=g)
+  b1 = torch.randn(second_layer_size, generator=g)
+  W2 = torch.randn((second_layer_size, CHARACTERS_NUMBER), generator=g)
+  b2 = torch.randn(CHARACTERS_NUMBER, generator=g)
+
+  return Parameters(
+    features= characters_features,
+    W1= W1,
+    b1= b1,
+    W2= W2,
+    b2= b2,
+  )
 
 def create_lookup_table(X: torch.tensor, g: torch.Generator) -> Tuple[torch.Tensor, torch.Tensor]:
   """
@@ -89,6 +148,19 @@ def build_dataset(names: list[str], itos: Dict[int, str], stoi: Dict[str, int]) 
 
 
 def build_vocabulary_of_characters(names: list[str]) -> Tuple[list[str], Dict[str, int], Dict[int, str]]:
+  """
+  Extracts the tokens for the character-level model and then return the character mappings
+  for the dataset of names
+
+  Args:
+    names: A list of names
+  
+  Returns:
+    characters: The list of tokens (characters) used by the model
+    stoi: A mapping form characters to integers
+    itos: A mapping form integers to characters
+  """
+
   # Get the set of unique characters in the dataset
   characters = sorted(list(set(''.join(names))))
 
@@ -103,6 +175,9 @@ def build_vocabulary_of_characters(names: list[str]) -> Tuple[list[str], Dict[st
 
 
 def get_dataset(path: str) -> list[str]:
+  """
+  Obtains the dataset of names in the format of a list of strings 
+  """
   with open(path, 'r') as file:
     lines = file.read().splitlines()
 
