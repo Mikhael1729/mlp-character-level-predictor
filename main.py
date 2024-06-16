@@ -39,12 +39,19 @@ class Parameters:
 
 
 def main():
-  names = get_dataset(DATASET_PATH)
-  _, itos, stoi = build_vocabulary_of_characters(names)
-  X, Y = build_dataset(names, itos, stoi)
   g = torch.Generator().manual_seed(2147483647)
-  embeddings, characters_features = create_lookup_table(X, g)
-  parameters = create_parameters(g, characters_features, embeddings)
+
+  names = get_dataset(DATASET_PATH)
+  _, _, stoi = generate_token_mappings(names)
+  X, Y = create_training_data(names, stoi)
+  characters_features = create_lookup_table(X, g)
+  parameters = initialize_network_parameters(
+    generator = g,
+    characters_features=characters_features,
+    first_layer_size=CHARACTER_FEATURES_SIZE * BLOCK_SIZE, # 6, because of the 3-lenght context size
+    second_layer_size=100
+  )
+
   gradient_descent(X, Y, parameters)
 
 def gradient_descent(X: torch.Tensor, Y: torch.Tensor, p: Parameters, debug=True, training_steps=1000):
@@ -52,7 +59,7 @@ def gradient_descent(X: torch.Tensor, Y: torch.Tensor, p: Parameters, debug=True
   p.prepare_for_backward()
 
   for _ in range(training_steps):
-    embeddings = p.features[X].view(-1, 6)
+    embeddings = p.features[X].view(-1, 6) # (32, 6)
 
     # Forward
     a1 = embeddings @ p.W1 + p.b1
@@ -88,12 +95,11 @@ def forward(embeddings: torch.Tensor, characters_features: torch.Tensor, Y: torc
 
   return loss, [characters_features, W1, b1, W2, b2]
 
-def create_parameters(g: torch.Generator, characters_features: torch.Tensor, embeddings : torch.Tensor, second_layer_size = 100):
-  neurons_per_sample = embeddings.shape[1] # 6
-  W1 = torch.randn((neurons_per_sample, second_layer_size), generator=g)
-  b1 = torch.randn(second_layer_size, generator=g)
-  W2 = torch.randn((second_layer_size, CHARACTERS_NUMBER), generator=g)
-  b2 = torch.randn(CHARACTERS_NUMBER, generator=g)
+def initialize_network_parameters(generator: torch.Generator, characters_features: torch.Tensor, first_layer_size: int, second_layer_size: int):
+  W1 = torch.randn((first_layer_size, second_layer_size), generator=generator)
+  b1 = torch.randn(second_layer_size, generator=generator)
+  W2 = torch.randn((second_layer_size, CHARACTERS_NUMBER), generator=generator)
+  b2 = torch.randn(CHARACTERS_NUMBER, generator=generator)
 
   return Parameters(
     features= characters_features,
@@ -108,21 +114,17 @@ def create_lookup_table(X: torch.tensor, g: torch.Generator) -> Tuple[torch.Tens
   Builds the features table associated with the given input X
 
   Returns:
-    embedding: A tensor of shape (m, l) where m is the number of samples and l is total of features for each character in a given sample (6 in total)
-  """
-  
+    embedding: A tensor of shape (c, l) where c is the number of unique characters and
+               l is total of features for a character. In this case c is 27 and l is 2
 
-  # Randomly generates a two dimensional vector for each character
+  """
+  # Randomly generate a two dimensional vector for each character
   characters_features = torch.randn((CHARACTERS_NUMBER, CHARACTER_FEATURES_SIZE), generator=g) 
   
-  # Index each character in the samples with its corresponding features. Its shape is (m, n, k) where m is the number of samples, n the context lenght and k the features size
-  embedding = characters_features[X]; s = embedding.shape
-  embedding = embedding.view(s[0], s[1] * s[2]) # Flatten the resulting embedding to have all the features of all characters in a single row
-
-  return embedding, characters_features
+  return characters_features
 
 
-def build_dataset(names: list[str], itos: Dict[int, str], stoi: Dict[str, int]) -> Tuple[torch.Tensor, torch.Tensor]:
+def create_training_data(names: list[str], stoi: Dict[str, int]) -> Tuple[torch.Tensor, torch.Tensor]:
   """
   Builds dataset for training from a list of names.
 
@@ -147,7 +149,7 @@ def build_dataset(names: list[str], itos: Dict[int, str], stoi: Dict[str, int]) 
   return torch.tensor(X), torch.tensor(Y)
 
 
-def build_vocabulary_of_characters(names: list[str]) -> Tuple[list[str], Dict[str, int], Dict[int, str]]:
+def generate_token_mappings(names: list[str]) -> Tuple[list[str], Dict[str, int], Dict[int, str]]:
   """
   Extracts the tokens for the character-level model and then return the character mappings
   for the dataset of names
