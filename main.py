@@ -18,6 +18,7 @@ class Parameters:
     self.b1 = b1
     self.W2 = W2
     self.b2 = b2
+    self.parameters_list = [self.features, self.W1, self.b1, self.W2, self.b2]
 
   def print_count(self):
     print(sum(p.nelement() for p in self.get_parameters()))
@@ -35,16 +36,19 @@ class Parameters:
       parameter.grad = None
   
   def get_parameters(self) -> list[torch.Tensor]:
-    return [self.features, self.W1, self.b1, self.W2, self.b2]
+    return self.parameters_list
 
 
 def main():
   g = torch.Generator().manual_seed(2147483647)
 
+  # Get training raw data
   names = get_dataset(DATASET_PATH)
-  _, _, stoi = generate_token_mappings(names)
-  X, Y = create_training_data(names, stoi)
-  characters_features = create_lookup_table(X, g)
+
+  # Create the matrix with the features associated with each character
+  characters_features = create_lookup_table(g)
+
+  # Initialize the network parameters
   parameters = initialize_network_parameters(
     generator = g,
     characters_features=characters_features,
@@ -52,6 +56,13 @@ def main():
     second_layer_size=100
   )
 
+  # Create mapping to encode the tokens into numbers (that the network actually process)
+  _, _, stoi = generate_token_mappings(names)
+
+  # Get trainining dataset
+  X, Y = create_training_data(names, stoi)
+
+  # Train the network
   gradient_descent(X, Y, parameters)
 
 def gradient_descent(X: torch.Tensor, Y: torch.Tensor, p: Parameters, debug=True, training_steps=1000):
@@ -109,7 +120,7 @@ def initialize_network_parameters(generator: torch.Generator, characters_feature
     b2= b2,
   )
 
-def create_lookup_table(X: torch.tensor, g: torch.Generator) -> Tuple[torch.Tensor, torch.Tensor]:
+def create_lookup_table(g: torch.Generator) -> Tuple[torch.Tensor, torch.Tensor]:
   """
   Builds the features table associated with the given input X
 
@@ -159,8 +170,8 @@ def generate_token_mappings(names: list[str]) -> Tuple[list[str], Dict[str, int]
   
   Returns:
     characters: The list of tokens (characters) used by the model
-    stoi: A mapping form characters to integers
     itos: A mapping form integers to characters
+    stoi: A mapping form characters to integers
   """
 
   # Get the set of unique characters in the dataset
