@@ -1,7 +1,9 @@
-import torch
 from typing import Dict, Tuple
+import torch
 import torch.nn.functional as F
+import random
 
+random.seed(42)
 
 BLOCK_SIZE = 3 # Context lenght. How many characters are needed to predict the next one
 CHARACTER_FEATURES_SIZE = 2
@@ -38,6 +40,27 @@ class Parameters:
   def get_parameters(self) -> list[torch.Tensor]:
     return self.parameters_list
 
+class Dataset:
+  def __init__(self, X: torch.Tensor, Y: torch.Tensor):
+    self.X = X
+    self.Y = Y
+
+class Datasets:
+  def __init__(self, names: list[str], stoi: Dict[int, str]):
+    random.shuffle(names)
+
+    n = len(names)
+    eighty_percent_index = int(0.8 * n)
+    ninety_percent_index = int(0.9 * n)
+
+    X_train, Y_train = build_dataset(names[:eighty_percent_index], stoi)
+    X_dev, Y_dev = build_dataset(names[eighty_percent_index:ninety_percent_index], stoi)
+    X_test, Y_test = build_dataset(names[ninety_percent_index:])
+
+    self.train = Dataset(X_train, Y_train)
+    self.dev = Dataset(X_dev, Y_dev)
+    self.test = Dataset(X_test, Y_test)
+
 
 def main():
   g = torch.Generator().manual_seed(2147483647)
@@ -60,10 +83,11 @@ def main():
   _, _, stoi = generate_token_mappings(names)
 
   # Get trainining dataset
-  X, Y = create_training_data(names, stoi)
+  datasets = Datasets(names, stoi)
 
   # Train the network
-  gradient_descent(X, Y, parameters)
+  gradient_descent(datasets.train.X, datasets.train.Y, parameters)
+
 
 def gradient_descent(X: torch.Tensor, Y: torch.Tensor, p: Parameters, debug=True, training_steps=1000):
   p.print_count()
@@ -135,7 +159,7 @@ def create_lookup_table(g: torch.Generator) -> Tuple[torch.Tensor, torch.Tensor]
   return characters_features
 
 
-def create_training_data(names: list[str], stoi: Dict[str, int]) -> Tuple[torch.Tensor, torch.Tensor]:
+def build_dataset(names: list[str], stoi: Dict[str, int]) -> Tuple[torch.Tensor, torch.Tensor]:
   """
   Builds dataset for training from a list of names.
 
