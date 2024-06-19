@@ -55,7 +55,7 @@ class Datasets:
 
     X_train, Y_train = build_dataset(names[:eighty_percent_index], stoi)
     X_dev, Y_dev = build_dataset(names[eighty_percent_index:ninety_percent_index], stoi)
-    X_test, Y_test = build_dataset(names[ninety_percent_index:])
+    X_test, Y_test = build_dataset(names[ninety_percent_index:], stoi)
 
     self.train = Dataset(X_train, Y_train)
     self.dev = Dataset(X_dev, Y_dev)
@@ -86,7 +86,22 @@ def main():
   datasets = Datasets(names, stoi)
 
   # Train the network
-  gradient_descent(datasets.train.X, datasets.train.Y, parameters)
+  while True:
+    trainin_steps = int(input("Trainig steps: "))
+
+    gradient_descent(
+      datasets.train.X,
+      datasets.train.Y,
+      parameters,
+      training_steps=trainin_steps,
+      debug=True
+    )
+
+    continue_training = input("Continue training? (y/n)")
+    print("---")
+
+    if continue_training == "n":
+      break
 
 
 def gradient_descent(X: torch.Tensor, Y: torch.Tensor, p: Parameters, debug=True, training_steps=1000):
