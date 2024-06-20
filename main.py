@@ -13,6 +13,12 @@ END_START_CHARACTER = '.'
 DATASET_PATH = "./names.txt"
 
 
+class Hyperparameters:
+  def __init__(self, learning_rate: float, training_steps: int):
+    self.learning_rate = learning_rate
+    self.training_steps = training_steps
+
+
 class Parameters:
   def __init__(self, features: torch.Tensor, W1: torch.Tensor, b1: torch.Tensor, W2: torch.Tensor, b2: torch.Tensor):
     self.features = features
@@ -23,7 +29,11 @@ class Parameters:
     self.parameters_list = [self.features, self.W1, self.b1, self.W2, self.b2]
 
   def print_count(self):
-    print(sum(p.nelement() for p in self.get_parameters()))
+    print(f"Parameters: {sum(p.nelement() for p in self.get_parameters())}")
+    print(f"W1: {self.W1.shape}")
+    print(f"b1: {self.b1.shape}")
+    print(f"W2: {self.W2.shape}")
+    print(f"b2: {self.b2.shape}")
 
   def prepare_for_backward(self):
     parameters = self.get_parameters()
@@ -85,17 +95,20 @@ def main():
   # Get trainining dataset
   datasets = Datasets(names, stoi)
 
-  # Train the network
+  # Train loop
   while True:
-    trainin_steps = int(input("Trainig steps: "))
-
-    gradient_descent(
-      datasets.train.X,
-      datasets.train.Y,
-      parameters,
-      training_steps=trainin_steps,
-      debug=True
+    # Define the hyperparameters of the network
+    hyperparameters = Hyperparameters(
+      training_steps=int(input("Training steps (default 1K): ") or 3) * 10000,
+      learning_rate=float(input("Learning rate (default 0.1): ") or 0.1)
     )
+
+    # Train network
+    gradient_descent(datasets.train, parameters, hyperparameters, debug=True)
+
+    # Test network with dev set
+    loss = forward2(datasets.dev, parameters)
+    print(f"Test loss: {loss}")
 
     continue_training = input("Continue training? (y/n)")
     print("---")
@@ -104,20 +117,14 @@ def main():
       break
 
 
-def gradient_descent(X: torch.Tensor, Y: torch.Tensor, p: Parameters, debug=True, training_steps=1000):
-  p.print_count()
+def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True):
+  if debug:
+    p.print_count()
+
   p.prepare_for_backward()
 
-  for _ in range(training_steps):
-    embeddings = p.features[X].view(-1, 6) # (32, 6)
-
-    # Forward
-    a1 = embeddings @ p.W1 + p.b1
-    z1 = torch.tanh(a1)
-
-    a2 = z1 @ p.W2 + p.b2
-
-    loss = F.cross_entropy(a2, Y)
+  for _ in range(hyperparameters.training_steps):
+    loss = forward2(train_set, p)
 
     # Backward
     p.reset_gradients()
@@ -125,10 +132,22 @@ def gradient_descent(X: torch.Tensor, Y: torch.Tensor, p: Parameters, debug=True
 
     # Update
     for parameter in p.get_parameters():
-      parameter.data += -0.1 * parameter.grad
+      parameter.data += -hyperparameters.learning_rate * parameter.grad
 
   if debug:
-    print(f"loss: {loss.item()}")
+    print(f"Train loss: {loss.item()}")
+
+def forward2(dataset: Dataset, p: Parameters) -> torch.Tensor:
+  embeddings = p.features[dataset.X].view(-1, 6) # (32, 6)
+
+  a1 = embeddings @ p.W1 + p.b1
+  z1 = torch.tanh(a1)
+
+  a2 = z1 @ p.W2 + p.b2
+
+  loss = F.cross_entropy(a2, dataset.Y)
+
+  return loss
 
 def forward(embeddings: torch.Tensor, characters_features: torch.Tensor, Y: torch.Tensor, g: torch.Generator, size = 100) -> Tuple[torch.Tensor, list[torch.Tensor]]:
   neurons_per_sample = embeddings.shape[1] # 6
