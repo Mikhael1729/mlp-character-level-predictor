@@ -14,9 +14,10 @@ DATASET_PATH = "./names.txt"
 
 
 class Hyperparameters:
-  def __init__(self, learning_rate: float, training_steps: int):
+  def __init__(self, learning_rate: float, training_steps: int, mini_batch_size: int):
     self.learning_rate = learning_rate
     self.training_steps = training_steps
+    self.minibatch_size = mini_batch_size
 
 
 class Parameters:
@@ -95,13 +96,18 @@ def main():
   # Get trainining dataset
   datasets = Datasets(names, stoi)
 
+  repeated_hyper_parameters = None
+
   # Train loop
   while True:
     # Define the hyperparameters of the network
-    hyperparameters = Hyperparameters(
-      training_steps=int(input("Training steps (default 1K): ") or 3) * 10000,
-      learning_rate=float(input("Learning rate (default 0.1): ") or 0.1)
+    hyperparameters = repeated_hyper_parameters or Hyperparameters(
+      training_steps=int(input("Training steps (default 100): ") or 100),
+      learning_rate=float(input("Learning rate (default 0.1): ") or 0.1),
+      mini_batch_size=int(input("Minbatch size (default 32): ") or 32)
     )
+
+    repeated_hyper_parameters = None
 
     # Train network
     gradient_descent(datasets.train, parameters, hyperparameters, debug=True)
@@ -110,12 +116,14 @@ def main():
     loss = forward2(datasets.dev, parameters)
     print(f"Test loss: {loss}")
 
-    continue_training = input("Continue training? (y/n)")
+    continue_training = input("Continue training? (y/n/r): ")
     print("---")
 
     if continue_training == "n":
       break
 
+    if continue_training == "r":
+      repeated_hyper_parameters = hyperparameters
 
 def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True):
   if debug:
@@ -124,18 +132,26 @@ def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperpa
   p.prepare_for_backward()
 
   for _ in range(hyperparameters.training_steps):
-    loss = forward2(train_set, p)
+    # Create minibatches for training
+    minibatch_indices = get_indices_mini_batch(train_set.X.shape[0], hyperparameters.minibatch_size)
+    minibatch = Dataset(train_set.X[minibatch_indices], train_set.Y[minibatch_indices])
 
-    # Backward
+    # Perform forward pass
+    loss = forward2(minibatch, p)
+
+    # Perform backward pass
     p.reset_gradients()
     loss.backward()
 
-    # Update
+    # Optimize the network
     for parameter in p.get_parameters():
       parameter.data += -hyperparameters.learning_rate * parameter.grad
 
   if debug:
     print(f"Train loss: {loss.item()}")
+
+def get_indices_mini_batch(samples_size: int, mini_batch_size: int):
+  return torch.randint(0, samples_size, (mini_batch_size,))
 
 def forward2(dataset: Dataset, p: Parameters) -> torch.Tensor:
   embeddings = p.features[dataset.X].view(-1, 6) # (32, 6)
@@ -204,7 +220,7 @@ def build_dataset(names: list[str], stoi: Dict[str, int]) -> Tuple[torch.Tensor,
   """
   X, Y, = [], []
 
-  for word in names[:5]:
+  for word in names:
     context = [0] * BLOCK_SIZE # Empty letters, represented by '.', '.', '.' which encoded would be 0, 0, 0
 
     for character in word + '.': # The '.' uses "allucination" to encode meta information about the end of names
