@@ -18,6 +18,9 @@ class Hyperparameters:
     self.learning_rate = learning_rate
     self.training_steps = training_steps
     self.minibatch_size = mini_batch_size
+  
+  def __str__(self):
+    return f"Training steps: {self.training_steps}\nLearning rate: {self.learning_rate}\nMinibatch size: {self.minibatch_size}"
 
 
 class Parameters:
@@ -117,6 +120,7 @@ def main():
     print(f"Test loss: {loss}")
 
     continue_training = input("Continue training? (y/n/r): ")
+    print("")
     print("---")
 
     if continue_training == "n":
@@ -124,6 +128,7 @@ def main():
 
     if continue_training == "r":
       repeated_hyper_parameters = hyperparameters
+      print(repeated_hyper_parameters)
 
 def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True):
   if debug:
