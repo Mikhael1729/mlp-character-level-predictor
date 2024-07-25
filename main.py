@@ -107,7 +107,7 @@ def main():
     hyperparameters = repeated_hyper_parameters or Hyperparameters(
       training_steps=int(input("Training steps (default 100): ") or 100),
       learning_rate=float(input("Learning rate (default 0.1): ") or 0.1),
-      mini_batch_size=int(input("Minbatch size (default 32): ") or 32)
+      mini_batch_size=int(input("Minibatch size (default 32): ") or 32)
     )
 
     repeated_hyper_parameters = None
@@ -159,7 +159,7 @@ def get_indices_mini_batch(samples_size: int, mini_batch_size: int):
   return torch.randint(0, samples_size, (mini_batch_size,))
 
 def forward2(dataset: Dataset, p: Parameters) -> torch.Tensor:
-  embeddings = p.features[dataset.X].view(-1, 6) # (32, 6)
+  embeddings = p.features[dataset.X].view(-1, 6) # (m, 6)
 
   a1 = embeddings @ p.W1 + p.b1
   z1 = torch.tanh(a1)
@@ -249,8 +249,8 @@ def generate_token_mappings(names: list[str]) -> Tuple[list[str], Dict[str, int]
   
   Returns:
     characters: The list of tokens (characters) used by the model
-    itos: A mapping form integers to characters
-    stoi: A mapping form characters to integers
+    itos: A mapping of integers to characters
+    stoi: A mapping of characters to integers
   """
 
   # Get the set of unique characters in the dataset
