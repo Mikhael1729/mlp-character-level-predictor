@@ -1,7 +1,9 @@
+import os
 from typing import Dict, Tuple
 import torch
 import torch.nn.functional as F
 import random
+from exploration_helpers import LearningRateStatistics
 
 random.seed(42)
 
@@ -103,21 +105,42 @@ def main():
 
   # Train loop
   while True:
+    # Enable the statics analysis of learning rates
+    explore_learning_rates = input('Explore learning rates? Y/N: ') or "N"
+    print("\n")
+
     # Define the hyperparameters of the network
-    hyperparameters = repeated_hyper_parameters or Hyperparameters(
-      training_steps=int(input("Training steps (default 100): ") or 100),
-      learning_rate=float(input("Learning rate (default 0.1): ") or 0.1),
-      mini_batch_size=int(input("Minibatch size (default 32): ") or 32)
-    )
+    if explore_learning_rates == "Y":
+      clear_console()
+      print("Exploration settings: \n")
+
+      hyperparameters = repeated_hyper_parameters or Hyperparameters(
+        training_steps=None,
+        learning_rate=None,
+        mini_batch_size=int(input("- Minibatch size (default 32): ") or 32),
+      )
+    else:
+      clear_console()
+      print("Training settings: \n")
+
+      hyperparameters = repeated_hyper_parameters or Hyperparameters(
+        training_steps=int(input("- Training steps (default 100): ") or 100),
+        learning_rate=float(input("- Learning rate (default 0.1): ") or 0.1),
+        mini_batch_size=int(input("- Minibatch size (default 32): ") or 32)
+      )
 
     repeated_hyper_parameters = None
 
     # Train network
-    gradient_descent(datasets.train, parameters, hyperparameters, debug=True)
+    gradient_descent(datasets.train, parameters, hyperparameters, debug=True, find_learning_rate=True if explore_learning_rates == "Y" else False)
 
     # Test network with dev set
     loss = forward2(datasets.dev, parameters)
-    print(f"Test loss: {loss}")
+    print(f"Test loss: {loss}\n---\n")
+
+
+    if explore_learning_rates:
+      continue
 
     continue_training = input("Continue training? (y/n/r): ")
     print("")
@@ -130,13 +153,26 @@ def main():
       repeated_hyper_parameters = hyperparameters
       print(repeated_hyper_parameters)
 
-def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True):
+def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True, find_learning_rate=False):
+  if find_learning_rate:
+    learning_rate_statistics = LearningRateStatistics(
+      lower_bound=int(input("- Lower bound (default -3): ") or -3),
+      upper_bound=int(input("- Upper bound (default 1): ") or 1),
+      steps=int(input("- Number of steps (default 1000): ") or 1000),
+    )
+
+    print("\n")
+
   if debug:
+    print("Parameters info:\n")
     p.print_count()
+    print("\n")
 
   p.prepare_for_backward()
 
-  for _ in range(hyperparameters.training_steps):
+  steps = hyperparameters.training_steps if not find_learning_rate else learning_rate_statistics.steps
+
+  for i in range(steps):
     # Create minibatches for training
     minibatch_indices = get_indices_mini_batch(train_set.X.shape[0], hyperparameters.minibatch_size)
     minibatch = Dataset(train_set.X[minibatch_indices], train_set.Y[minibatch_indices])
@@ -149,11 +185,19 @@ def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperpa
     loss.backward()
 
     # Optimize the network
+    learning_rate = hyperparameters.learning_rate if not find_learning_rate else learning_rate_statistics.learning_rate_space[i]
+
     for parameter in p.get_parameters():
-      parameter.data += -hyperparameters.learning_rate * parameter.grad
+      parameter.data += -learning_rate * parameter.grad
+
+    if find_learning_rate:
+      learning_rate_statistics.add_record(i, loss)
 
   if debug:
-    print(f"Train loss: {loss.item()}")
+    print(f"Train loss: {loss.item()}\n\n")
+
+  if find_learning_rate:
+    learning_rate_statistics.plot_exponents_stats()
 
 def get_indices_mini_batch(samples_size: int, mini_batch_size: int):
   return torch.randint(0, samples_size, (mini_batch_size,))
@@ -275,6 +319,8 @@ def get_dataset(path: str) -> list[str]:
 
   return lines
 
+def clear_console():
+    os.system('cls' if os.name=='nt' else 'clear')
 
 if __name__ == "__main__":
   main()
