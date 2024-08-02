@@ -102,12 +102,16 @@ def main():
   datasets = Datasets(names, stoi)
 
   repeated_hyper_parameters = None
+  explore_learning_rates = None
+  continue_training = None
 
   # Train loop
+
   while True:
     # Enable the statics analysis of learning rates
-    explore_learning_rates = input('Explore learning rates? Y/N: ') or "N"
-    print("\n")
+    if explore_learning_rates == None or explore_learning_rates == 'Y':
+      explore_learning_rates = input('Explore learning rates? Y/N: ') or "N"
+      print("\n")
 
     # Define the hyperparameters of the network
     if explore_learning_rates == "Y":
@@ -120,8 +124,9 @@ def main():
         mini_batch_size=int(input("- Minibatch size (default 32): ") or 32),
       )
     else:
-      clear_console()
-      print("Training settings: \n")
+      if continue_training == None:
+        clear_console()
+        print("Training settings: \n")
 
       hyperparameters = repeated_hyper_parameters or Hyperparameters(
         training_steps=int(input("- Training steps (default 100): ") or 100),
