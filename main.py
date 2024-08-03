@@ -72,10 +72,12 @@ class Datasets:
     X_train, Y_train = build_dataset(names[:eighty_percent_index], stoi)
     X_dev, Y_dev = build_dataset(names[eighty_percent_index:ninety_percent_index], stoi)
     X_test, Y_test = build_dataset(names[ninety_percent_index:], stoi)
+    X_all, Y_all = build_dataset(names, stoi)
 
     self.train = Dataset(X_train, Y_train)
     self.dev = Dataset(X_dev, Y_dev)
     self.test = Dataset(X_test, Y_test)
+    self.all = Dataset(X_all, Y_all)
 
 
 def main():
@@ -137,7 +139,13 @@ def main():
     repeated_hyper_parameters = None
 
     # Train network
-    gradient_descent(datasets.train, parameters, hyperparameters, debug=True, find_learning_rate=True if explore_learning_rates == "Y" else False)
+    gradient_descent(
+      train_set=datasets.train if not explore_learning_rates else datasets.all,
+      p=parameters,
+      hyperparameters=hyperparameters,
+      debug=True,
+      find_learning_rate=True if explore_learning_rates == "Y" else False,
+    )
 
     # Test network with dev set
     loss = forward2(datasets.dev, parameters)
