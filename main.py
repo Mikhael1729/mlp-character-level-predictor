@@ -57,9 +57,10 @@ class Parameters:
     return self.parameters_list
 
 class Dataset:
-  def __init__(self, X: torch.Tensor, Y: torch.Tensor):
+  def __init__(self, name: str, X: torch.Tensor, Y: torch.Tensor):
     self.X = X
     self.Y = Y
+    self.name = name
 
 class Datasets:
   def __init__(self, names: list[str], stoi: Dict[int, str]):
@@ -74,10 +75,10 @@ class Datasets:
     X_test, Y_test = build_dataset(names[ninety_percent_index:], stoi)
     X_all, Y_all = build_dataset(names, stoi)
 
-    self.train = Dataset(X_train, Y_train)
-    self.dev = Dataset(X_dev, Y_dev)
-    self.test = Dataset(X_test, Y_test)
-    self.all = Dataset(X_all, Y_all)
+    self.train = Dataset("train", X_train, Y_train)
+    self.dev = Dataset("dev", X_dev, Y_dev)
+    self.test = Dataset("test", X_test, Y_test)
+    self.all = Dataset("all", X_all, Y_all)
 
 
 def main():
@@ -136,11 +137,13 @@ def main():
         mini_batch_size=int(input("- Minibatch size (default 32): ") or 32)
       )
 
+      print("")
+
     repeated_hyper_parameters = None
 
     # Train network
     gradient_descent(
-      train_set=datasets.train if not explore_learning_rates else datasets.all,
+      train_set=datasets.all if explore_learning_rates == "Y" else datasets.train,
       p=parameters,
       hyperparameters=hyperparameters,
       debug=True,
@@ -152,7 +155,7 @@ def main():
     print(f"Test loss: {loss}\n---\n")
 
 
-    if explore_learning_rates:
+    if explore_learning_rates == 'Y':
       continue
 
     continue_training = input("Continue training? (y/n/r): ")
@@ -188,7 +191,7 @@ def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperpa
   for i in range(steps):
     # Create minibatches for training
     minibatch_indices = get_indices_mini_batch(train_set.X.shape[0], hyperparameters.minibatch_size)
-    minibatch = Dataset(train_set.X[minibatch_indices], train_set.Y[minibatch_indices])
+    minibatch = Dataset(f"mini_of_{hyperparameters.minibatch_size}_from_{train_set.name}", train_set.X[minibatch_indices], train_set.Y[minibatch_indices])
 
     # Perform forward pass
     loss = forward2(minibatch, p)
@@ -207,7 +210,7 @@ def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperpa
       learning_rate_statistics.add_record(i, loss)
 
   if debug:
-    print(f"Train loss: {loss.item()}\n\n")
+    print(f"Train loss: {loss.item()}")
 
   if find_learning_rate:
     learning_rate_statistics.plot_exponents_stats()
