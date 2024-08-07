@@ -81,12 +81,17 @@ class Datasets:
     self.test = Dataset("test", X_test, Y_test)
     self.all = Dataset("all", X_all, Y_all)
 
+ARG_LEARNING_RATE = "learning-rate"
+ARG_TRAINING_LOSS = "training-loss"
 
 def main():
   parser = argparse.ArgumentParser(description="Names Generator (MLP approach)")
-  parser.add_argument("--show-stats", action="store_true", help="Plots the step-loss statistics after training is finished")
+  parser.add_argument("-d", "--display-statistics", choices=[ARG_LEARNING_RATE, ARG_TRAINING_LOSS], help='Plots the chosen graphic after training')
+
 
   args = parser.parse_args()
+  explore_learning_rates = 'Y' if args.display_statistics == ARG_LEARNING_RATE else 'N'
+  explore_training_loss = True if args.display_statistics == ARG_TRAINING_LOSS else False
 
   g = torch.Generator().manual_seed(2147483647)
 
@@ -111,17 +116,11 @@ def main():
   datasets = Datasets(names, stoi)
 
   repeated_hyper_parameters = None
-  explore_learning_rates = None
   continue_training = None
 
   # Train loop
 
   while True:
-    # Enable the statics analysis of learning rates
-    if explore_learning_rates == None or explore_learning_rates == 'Y':
-      explore_learning_rates = input('Explore learning rates? Y/N: ') or "N"
-      print("\n")
-
     # Define the hyperparameters of the network
     if explore_learning_rates == "Y":
       clear_console()
@@ -154,7 +153,7 @@ def main():
       hyperparameters=hyperparameters,
       debug=True,
       find_learning_rate=True if explore_learning_rates == "Y" else False,
-      show_stats=args.show_stats
+      show_stats=explore_training_loss
     )
 
     # Test network with dev set

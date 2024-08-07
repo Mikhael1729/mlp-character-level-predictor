@@ -23,3 +23,11 @@ Run the program while keeping track of the logs:
 ```bash
 python3 main.py | tee logs/<log-file-name>.txt
 ```
+
+## Documentation
+
+To display the different configurations to the execution, run:
+
+```bash
+python3 main.py --help
+```

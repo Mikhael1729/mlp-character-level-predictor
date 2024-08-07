@@ -23,13 +23,11 @@ class LearningRateStatistics:
     self.learning_rates = []
     self.exponents = []
     self.losses = []
-    self.steps = []
 
   def add_record(self, step: int, loss: torch.Tensor):
     self.learning_rates.append(self.learning_rate_space[step])
     self.exponents.append(self.exponents_space[step])
     self.losses.append(loss.item())
-    self.steps.append(step)
 
   def plot_exponents_stats(self):
     plt.title("Exponent Stats (exponent, loss)")
