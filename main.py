@@ -152,8 +152,8 @@ def main():
       p=parameters,
       hyperparameters=hyperparameters,
       debug=True,
-      find_learning_rate=True if explore_learning_rates == "Y" else False,
-      show_stats=explore_training_loss
+      display_learning_rate_stats=True if explore_learning_rates == "Y" else False,
+      display_steps_stats=explore_training_loss
     )
 
     # Test network with dev set
@@ -174,27 +174,12 @@ def main():
       repeated_hyper_parameters = hyperparameters
       print(repeated_hyper_parameters)
 
-def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True, find_learning_rate=False, show_stats=False):
-  if show_stats:
-    steps_statistics = StepLossesStatistics()
-
-  if find_learning_rate:
-    learning_rate_statistics = LearningRateStatistics(
-      lower_bound=int(input("- Lower bound (default -3): ") or -3),
-      upper_bound=int(input("- Upper bound (default 1): ") or 1),
-      steps=int(input("- Number of steps (default 1000): ") or 1000),
-    )
-
-    print("\n")
-
-  if debug:
-    print("Parameters info:\n")
-    p.print_count()
-    print("\n")
+def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True, display_learning_rate_stats=False, display_steps_stats=False):
+  # Prepare for gradient descent
+  lr_stats, steps_stats = init_statistics(p, display_learning_rate_stats, display_steps_stats, debug)
+  steps = hyperparameters.training_steps if lr_stats is None else lr_stats.steps
 
   p.prepare_for_backward()
-
-  steps = hyperparameters.training_steps if not find_learning_rate else learning_rate_statistics.steps
 
   for i in range(steps):
     # Create minibatches for training
@@ -209,24 +194,53 @@ def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperpa
     loss.backward()
 
     # Optimize the network
-    learning_rate = hyperparameters.learning_rate if not find_learning_rate else learning_rate_statistics.learning_rate_space[i]
+    learning_rate = hyperparameters.learning_rate if lr_stats is None else lr_stats.learning_rate_space[i]
 
     for parameter in p.get_parameters():
       parameter.data += -learning_rate * parameter.grad
 
-    if show_stats:
-      steps_statistics.add_record(i, loss)
+    handle_statistics_during_iterations(steps_stats, lr_stats, i, loss)
 
-    if find_learning_rate:
-      learning_rate_statistics.add_record(i, loss)
+  plot_statistics(steps_stats, lr_stats, debug, loss)
 
+def init_statistics(p: Parameters, display_learning_rate_stats: bool, display_step_stats: bool, debug: bool) -> Tuple[LearningRateStatistics | None, StepLossesStatistics | None]:
+  learning_rate_stats: LearningRateStatistics = None
+  steps_stats: LearningRateStatistics = None
+
+  if display_learning_rate_stats:
+    learning_rate_stats = LearningRateStatistics(
+      lower_bound=int(input("- Lower bound (default -3): ") or -3),
+      upper_bound=int(input("- Upper bound (default 1): ") or 1),
+      steps=int(input("- Number of steps (default 1000): ") or 1000),
+    )
+
+    print("\n")
+
+  if display_step_stats:
+    steps_stats = StepLossesStatistics()
+
+  if debug:
+    print("Parameters info:\n")
+    p.print_count()
+    print("\n")
+
+  return learning_rate_stats, steps_stats
+
+def handle_statistics_during_iterations(steps_statistics: StepLossesStatistics | None, learning_rate_statistics: LearningRateStatistics | None, step: int, loss: torch.Tensor):
+  if learning_rate_statistics is not None:
+    learning_rate_statistics.add_record(step, loss)
+
+  if steps_statistics is not None:
+    steps_statistics.add_record(step, loss)
+
+def plot_statistics(steps_statistics: StepLossesStatistics | None, learning_rate_statistics: LearningRateStatistics | None, debug: bool, loss: torch.Tensor):
   if debug:
     print(f"Train loss: {loss.item()}")
 
-  if find_learning_rate:
+  if learning_rate_statistics is not None:
     learning_rate_statistics.plot_exponents_stats()
 
-  if show_stats:
+  if steps_statistics is not None:
     steps_statistics.plot()
 
 def get_indices_mini_batch(samples_size: int, mini_batch_size: int):
