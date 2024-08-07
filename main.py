@@ -1,9 +1,10 @@
+import argparse
 import os
 from typing import Dict, Tuple
 import torch
 import torch.nn.functional as F
 import random
-from exploration_helpers import LearningRateStatistics
+from exploration_helpers import LearningRateStatistics, StepLossesStatistics
 
 random.seed(42)
 
@@ -82,6 +83,11 @@ class Datasets:
 
 
 def main():
+  parser = argparse.ArgumentParser(description="Names Generator (MLP approach)")
+  parser.add_argument("--show-stats", action="store_true", help="Plots the step-loss statistics after training is finished")
+
+  args = parser.parse_args()
+
   g = torch.Generator().manual_seed(2147483647)
 
   # Get training raw data
@@ -148,12 +154,12 @@ def main():
       hyperparameters=hyperparameters,
       debug=True,
       find_learning_rate=True if explore_learning_rates == "Y" else False,
+      show_stats=args.show_stats
     )
 
     # Test network with dev set
     loss = forward2(datasets.dev, parameters)
     print(f"Test loss: {loss}\n---\n")
-
 
     if explore_learning_rates == 'Y':
       continue
@@ -169,7 +175,10 @@ def main():
       repeated_hyper_parameters = hyperparameters
       print(repeated_hyper_parameters)
 
-def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True, find_learning_rate=False):
+def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True, find_learning_rate=False, show_stats=False):
+  if show_stats:
+    steps_statistics = StepLossesStatistics()
+
   if find_learning_rate:
     learning_rate_statistics = LearningRateStatistics(
       lower_bound=int(input("- Lower bound (default -3): ") or -3),
@@ -206,6 +215,9 @@ def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperpa
     for parameter in p.get_parameters():
       parameter.data += -learning_rate * parameter.grad
 
+    if show_stats:
+      steps_statistics.add_record(i, loss)
+
     if find_learning_rate:
       learning_rate_statistics.add_record(i, loss)
 
@@ -214,6 +226,9 @@ def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperpa
 
   if find_learning_rate:
     learning_rate_statistics.plot_exponents_stats()
+
+  if show_stats:
+    steps_statistics.plot()
 
 def get_indices_mini_batch(samples_size: int, mini_batch_size: int):
   return torch.randint(0, samples_size, (mini_batch_size,))
