@@ -4,7 +4,7 @@ from typing import Dict, Tuple
 import torch
 import torch.nn.functional as F
 import random
-from exploration_helpers import LearningRateStatistics, StepLossesStatistics
+from exploration_helpers import LearningRateStatistics, StepLossesStatistics, plot_features
 
 random.seed(42)
 
@@ -83,15 +83,16 @@ class Datasets:
 
 ARG_LEARNING_RATE = "learning-rate"
 ARG_TRAINING_LOSS = "training-loss"
+ARG_FEATURES = "features"
 
 def main():
   parser = argparse.ArgumentParser(description="Names Generator (MLP approach)")
-  parser.add_argument("-d", "--display-statistics", choices=[ARG_LEARNING_RATE, ARG_TRAINING_LOSS], help='Plots the chosen graphic after training')
-
+  parser.add_argument("-d", "--display-statistics", choices=[ARG_LEARNING_RATE, ARG_TRAINING_LOSS, ARG_FEATURES], help='Plots the chosen graphic after training')
 
   args = parser.parse_args()
   explore_learning_rates = 'Y' if args.display_statistics == ARG_LEARNING_RATE else 'N'
   explore_training_loss = True if args.display_statistics == ARG_TRAINING_LOSS else False
+  display_features = True if args.display_statistics == ARG_FEATURES else False 
 
   g = torch.Generator().manual_seed(2147483647)
 
@@ -110,7 +111,7 @@ def main():
   )
 
   # Create mapping to encode the tokens into numbers (that the network actually process)
-  _, _, stoi = generate_token_mappings(names)
+  _, itos, stoi = generate_token_mappings(names)
 
   # Get trainining dataset
   datasets = Datasets(names, stoi)
@@ -159,6 +160,9 @@ def main():
     # Test network with dev set
     loss = forward2(datasets.dev, parameters)
     print(f"Test loss: {loss}\n---\n")
+
+    if display_features:
+      plot_features(parameters.features, itos)
 
     if explore_learning_rates == 'Y':
       continue
@@ -327,7 +331,7 @@ def build_dataset(names: list[str], stoi: Dict[str, int]) -> Tuple[torch.Tensor,
   return torch.tensor(X), torch.tensor(Y)
 
 
-def generate_token_mappings(names: list[str]) -> Tuple[list[str], Dict[str, int], Dict[int, str]]:
+def generate_token_mappings(names: list[str]) -> Tuple[list[str], Dict[int, str], Dict[str, int]]:
   """
   Extracts the tokens for the character-level model and then return the character mappings
   for the dataset of names

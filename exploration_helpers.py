@@ -1,5 +1,23 @@
 import torch
 import matplotlib.pyplot as plt
+from typing import Dict
+
+def plot_features(features: torch.Tensor,  itos: Dict[int, str]):
+  plt.figure(figsize=(8, 8))
+  plt.scatter(features[:, 0].data, features[:, 1].data, s=200)
+  
+  for i in range(features.shape[0]):
+    plt.text(
+      x = features[i, 0].item(),
+      y = features[i, 1].item(),
+      s = itos[i],
+      ha = "center",
+      va="center",
+      color="white",
+    )
+
+    plt.grid('minor')
+    plt.show()
 
 class StepLossesStatistics:
   def __init__(self):
