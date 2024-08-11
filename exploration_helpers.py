@@ -17,7 +17,8 @@ def plot_features(features: torch.Tensor,  itos: Dict[int, str]):
     )
 
     plt.grid('minor')
-    plt.show()
+
+  plt.show()
 
 class StepLossesStatistics:
   def __init__(self):
