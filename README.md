@@ -31,3 +31,57 @@ To display the different configurations to the execution, run:
 ```bash
 python3 main.py --help
 ```
+
+Example:
+
+```bash
+python main.py -d "samples"
+```
+
+Output:
+
+```txt
+Training settings: 
+
+- Training steps (default 100): 50000
+- Learning rate (default 0.1): 0.1
+- Minibatch size (default 32): 32
+
+Parameters info:
+
+Parameters: 3481
+W1: torch.Size([6, 100])
+b1: torch.Size([100])
+W2: torch.Size([100, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.413003921508789
+Dev (test) loss: 2.3668856620788574
+---
+
+Samples:
+
+- careah.
+- amelle.
+- khkimrex.
+- tatlannan.
+- saler.
+- hetn.
+- deliyat.
+- kaqui.
+- nellara.
+- chaiiv.
+- kaleigphh.
+- mandin.
+- quibt.
+- sroilei.
+- jadbi.
+- wazelo.
+- dearyxi.
+- jacen.
+- dusa.
+- jed.
+
+Continue training? (y/n/r): 
+---
