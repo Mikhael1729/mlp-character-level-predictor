@@ -3,84 +3,20 @@ import os
 from typing import Dict, Tuple
 import torch
 import torch.nn.functional as F
-import random
 from exploration_helpers import LearningRateStatistics, StepLossesStatistics, plot_features
+from parameters import Hyperparameters, Parameters
+from datasets import Dataset, Datasets
 
-random.seed(42)
+# Dataset path
+DATASET_PATH = "./names.txt"
 
+# Hyperparameters
 BLOCK_SIZE = 3 # Context lenght. How many characters are needed to predict the next one
 CHARACTER_FEATURES_SIZE = 2
 CHARACTERS_NUMBER = 27
-
 END_START_CHARACTER = '.'
-DATASET_PATH = "./names.txt"
 
-
-class Hyperparameters:
-  def __init__(self, learning_rate: float, training_steps: int, mini_batch_size: int):
-    self.learning_rate = learning_rate
-    self.training_steps = training_steps
-    self.minibatch_size = mini_batch_size
-  
-  def __str__(self):
-    return f"Training steps: {self.training_steps}\nLearning rate: {self.learning_rate}\nMinibatch size: {self.minibatch_size}"
-
-
-class Parameters:
-  def __init__(self, features: torch.Tensor, W1: torch.Tensor, b1: torch.Tensor, W2: torch.Tensor, b2: torch.Tensor):
-    self.features = features
-    self.W1 = W1
-    self.b1 = b1
-    self.W2 = W2
-    self.b2 = b2
-    self.parameters_list = [self.features, self.W1, self.b1, self.W2, self.b2]
-
-  def print_count(self):
-    print(f"Parameters: {sum(p.nelement() for p in self.get_parameters())}")
-    print(f"W1: {self.W1.shape}")
-    print(f"b1: {self.b1.shape}")
-    print(f"W2: {self.W2.shape}")
-    print(f"b2: {self.b2.shape}")
-
-  def prepare_for_backward(self):
-    parameters = self.get_parameters()
-    
-    for parameter in parameters:
-      parameter.requires_grad = True
-
-  def reset_gradients(self):
-    parameters = self.get_parameters()
-
-    for parameter in parameters:
-      parameter.grad = None
-  
-  def get_parameters(self) -> list[torch.Tensor]:
-    return self.parameters_list
-
-class Dataset:
-  def __init__(self, name: str, X: torch.Tensor, Y: torch.Tensor):
-    self.X = X
-    self.Y = Y
-    self.name = name
-
-class Datasets:
-  def __init__(self, names: list[str], stoi: Dict[int, str]):
-    random.shuffle(names)
-
-    n = len(names)
-    eighty_percent_index = int(0.8 * n)
-    ninety_percent_index = int(0.9 * n)
-
-    X_train, Y_train = build_dataset(names[:eighty_percent_index], stoi)
-    X_dev, Y_dev = build_dataset(names[eighty_percent_index:ninety_percent_index], stoi)
-    X_test, Y_test = build_dataset(names[ninety_percent_index:], stoi)
-    X_all, Y_all = build_dataset(names, stoi)
-
-    self.train = Dataset("train", X_train, Y_train)
-    self.dev = Dataset("dev", X_dev, Y_dev)
-    self.test = Dataset("test", X_test, Y_test)
-    self.all = Dataset("all", X_all, Y_all)
-
+# Display argument options
 ARG_LEARNING_RATE = "learning-rate"
 ARG_TRAINING_LOSS = "training-loss"
 ARG_FEATURES = "features"
@@ -116,7 +52,7 @@ def main():
   _, itos, stoi = generate_token_mappings(names)
 
   # Get trainining dataset
-  datasets = Datasets(names, stoi)
+  datasets = Datasets(names, stoi, BLOCK_SIZE)
 
   repeated_hyper_parameters = None
   continue_training = None
@@ -335,31 +271,6 @@ def create_lookup_table(g: torch.Generator) -> Tuple[torch.Tensor, torch.Tensor]
   characters_features = torch.randn((CHARACTERS_NUMBER, CHARACTER_FEATURES_SIZE), generator=g) 
   
   return characters_features
-
-
-def build_dataset(names: list[str], stoi: Dict[str, int]) -> Tuple[torch.Tensor, torch.Tensor]:
-  """
-  Builds dataset for training from a list of names.
-
-  Returns:
-    Tuple[torch.Tensor, torch.Tensor]: 
-      - X: A tensor of shape (m, n) of type torch.int64 where m is the number of samples and n is the context length.
-      - Y: A tensor of shape (m,) of type torch.int64 , containing encoded target characters. 
-  """
-  X, Y, = [], []
-
-  for word in names:
-    context = [0] * BLOCK_SIZE # Empty letters, represented by '.', '.', '.' which encoded would be 0, 0, 0
-
-    for character in word + '.': # The '.' uses "allucination" to encode meta information about the end of names
-      encoded_character = stoi[character]
-
-      X.append(context)
-      Y.append(encoded_character)
-
-      context = context[1:] + [encoded_character] # Update the context to use the next letter. i.e.: 0,0,0 -> 0,0,5 = '.', '.', 'e'
-    
-  return torch.tensor(X), torch.tensor(Y)
 
 
 def generate_token_mappings(names: list[str]) -> Tuple[list[str], Dict[int, str], Dict[str, int]]:
