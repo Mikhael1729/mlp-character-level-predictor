@@ -22,9 +22,11 @@ ARG_TRAINING_LOSS = "training-loss"
 ARG_FEATURES = "features"
 ARG_SAMPLE = "samples" # If used a list of 10 names will be printed after training
 
+ARGS = [ARG_SAMPLE, ARG_FEATURES, ARG_LEARNING_RATE, ARG_TRAINING_LOSS]
+
 def main():
   parser = argparse.ArgumentParser(description="Names Generator (MLP approach)")
-  parser.add_argument("-d", "--display-statistics", choices=[ARG_LEARNING_RATE, ARG_TRAINING_LOSS, ARG_FEATURES, ARG_SAMPLE], help='Plots the chosen graphic after training')
+  parser.add_argument("-d", "--display-statistics", choices=ARGS, help='Plots the chosen graphic after training')
 
   args = parser.parse_args()
   explore_learning_rates = 'Y' if args.display_statistics == ARG_LEARNING_RATE else 'N'
@@ -45,7 +47,7 @@ def main():
     generator = g,
     characters_features=characters_features,
     first_layer_size=CHARACTER_FEATURES_SIZE * BLOCK_SIZE, # 6, because of the 3-lenght context size
-    second_layer_size=100
+    second_layer_size=600
   )
 
   # Create mapping to encode the tokens into numbers (that the network actually process)
@@ -108,7 +110,7 @@ def main():
     if explore_learning_rates == 'Y':
       continue
 
-    continue_training = input("Continue training? (y/n/r): ")
+    continue_training = input("Continue training? (y/n/r/d): ")
     print("")
     print("---")
 
@@ -118,6 +120,28 @@ def main():
     if continue_training == "r":
       repeated_hyper_parameters = hyperparameters
       print(repeated_hyper_parameters)
+
+    if continue_training == ARG_FEATURES:
+      plot_features(parameters.features, itos)
+
+    if continue_training == ARG_SAMPLE:
+      print_samples(parameters, itos)
+
+    if continue_training == ARG_LEARNING_RATE:
+      explore_learning_rates = True
+
+    if continue_training == ARG_TRAINING_LOSS:
+      explore_training_loss = True
+
+    if not is_argument(continue_training):
+      explore_learning_rates = False
+      explore_training_loss = False
+      display_features = False
+      display_samples = False
+
+
+def is_argument(option: str) -> bool:
+  return option in ARGS
 
 def print_samples(p: Parameters, itos: Dict[int, str]):
   g = torch.Generator().manual_seed(2147483647 + 10)
