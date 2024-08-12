@@ -84,15 +84,17 @@ class Datasets:
 ARG_LEARNING_RATE = "learning-rate"
 ARG_TRAINING_LOSS = "training-loss"
 ARG_FEATURES = "features"
+ARG_SAMPLE = "samples" # If used a list of 10 names will be printed after training
 
 def main():
   parser = argparse.ArgumentParser(description="Names Generator (MLP approach)")
-  parser.add_argument("-d", "--display-statistics", choices=[ARG_LEARNING_RATE, ARG_TRAINING_LOSS, ARG_FEATURES], help='Plots the chosen graphic after training')
+  parser.add_argument("-d", "--display-statistics", choices=[ARG_LEARNING_RATE, ARG_TRAINING_LOSS, ARG_FEATURES, ARG_SAMPLE], help='Plots the chosen graphic after training')
 
   args = parser.parse_args()
   explore_learning_rates = 'Y' if args.display_statistics == ARG_LEARNING_RATE else 'N'
   explore_training_loss = True if args.display_statistics == ARG_TRAINING_LOSS else False
   display_features = True if args.display_statistics == ARG_FEATURES else False 
+  display_samples = True if args.display_statistics == ARG_SAMPLE else False
 
   g = torch.Generator().manual_seed(2147483647)
 
@@ -159,7 +161,10 @@ def main():
 
     # Test network with dev set
     loss = forward2(datasets.dev, parameters)
-    print(f"Test loss: {loss}\n---\n")
+    print(f"Dev (test) loss: {loss}\n---\n")
+
+    if display_samples:
+      print_samples(parameters, itos)
 
     if display_features:
       plot_features(parameters.features, itos)
@@ -177,6 +182,32 @@ def main():
     if continue_training == "r":
       repeated_hyper_parameters = hyperparameters
       print(repeated_hyper_parameters)
+
+def print_samples(p: Parameters, itos: Dict[int, str]):
+  g = torch.Generator().manual_seed(2147483647 + 10)
+  print("Samples:\n")
+
+  for _ in range(20):
+    out = []
+    context = [0] * BLOCK_SIZE
+
+    while True:
+      embeddings = p.features[torch.tensor([context])]
+      a1 = torch.tanh(embeddings.view(1, -1) @ p.W1 + p.b1)
+      a2 = a1 @ p.W2 + p.b2
+      probs = F.softmax(a2, dim=1)
+      ix = torch.multinomial(probs, num_samples=1, generator=g).item()
+      context = context[1:] + [ix]
+
+      out.append(ix)
+
+      is_end_character = ix == 0
+      if is_end_character:
+        break
+
+    print(f"- {''.join(itos[i] for i in out)}")
+
+  print("---\n")
 
 def gradient_descent(train_set: Dataset, p: Parameters, hyperparameters: Hyperparameters, debug=True, display_learning_rate_stats=False, display_steps_stats=False):
   # Prepare for gradient descent
