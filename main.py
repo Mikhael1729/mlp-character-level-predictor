@@ -47,7 +47,7 @@ def main():
     generator = g,
     characters_features=characters_features,
     first_layer_size=CHARACTER_FEATURES_SIZE * BLOCK_SIZE, # 6, because of the 3-lenght context size
-    second_layer_size=600
+    second_layer_size=300
   )
 
   # Create mapping to encode the tokens into numbers (that the network actually process)
