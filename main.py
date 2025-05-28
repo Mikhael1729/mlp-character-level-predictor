@@ -12,9 +12,10 @@ DATASET_PATH = "./names.txt"
 
 # Hyperparameters
 BLOCK_SIZE = 3 # Context lenght. How many characters are needed to predict the next one
-CHARACTER_FEATURES_SIZE = 2
+CHARACTER_FEATURES_SIZE = 6
 CHARACTERS_NUMBER = 27
 END_START_CHARACTER = '.'
+SECOND_LAYER_SIZE = 600
 
 # Display argument options
 ARG_LEARNING_RATE = "learning-rate"
@@ -47,7 +48,7 @@ def main():
     generator = g,
     characters_features=characters_features,
     first_layer_size=CHARACTER_FEATURES_SIZE * BLOCK_SIZE, # 6, because of the 3-lenght context size
-    second_layer_size=300
+    second_layer_size=SECOND_LAYER_SIZE
   )
 
   # Create mapping to encode the tokens into numbers (that the network actually process)
@@ -242,7 +243,9 @@ def get_indices_mini_batch(samples_size: int, mini_batch_size: int):
   return torch.randint(0, samples_size, (mini_batch_size,))
 
 def forward2(dataset: Dataset, p: Parameters) -> torch.Tensor:
-  embeddings = p.features[dataset.X].view(-1, 6) # (m, 6)
+  first_layer_size = CHARACTER_FEATURES_SIZE * BLOCK_SIZE
+
+  embeddings = p.features[dataset.X].view(-1, first_layer_size) # (m, 6)
 
   a1 = embeddings @ p.W1 + p.b1
   z1 = torch.tanh(a1)

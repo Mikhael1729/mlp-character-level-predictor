@@ -1,0 +1,158 @@
+Training settings: 
+
+- Training steps (default 100): 10000
+- Learning rate (default 0.1): 0.0562
+- Minibatch size (default 32): 32
+
+Parameters info:
+
+Parameters: 10281
+W1: torch.Size([6, 300])
+b1: torch.Size([300])
+W2: torch.Size([300, 27])
+b2: torch.Size([27])
+
+
+Train loss: 1.8285162448883057
+Dev (test) loss: 2.519094228744507
+---
+
+Continue training? (y/n/r/d): r
+
+---
+Training steps: 10000
+Learning rate: 0.0562
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 10281
+W1: torch.Size([6, 300])
+b1: torch.Size([300])
+W2: torch.Size([300, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.5915451049804688
+Dev (test) loss: 2.4661035537719727
+---
+
+Continue training? (y/n/r/d): r
+
+---
+Training steps: 10000
+Learning rate: 0.0562
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 10281
+W1: torch.Size([6, 300])
+b1: torch.Size([300])
+W2: torch.Size([300, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.7794530391693115
+Dev (test) loss: 2.4214398860931396
+---
+
+Continue training? (y/n/r/d): r
+
+---
+Training steps: 10000
+Learning rate: 0.0562
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 10281
+W1: torch.Size([6, 300])
+b1: torch.Size([300])
+W2: torch.Size([300, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.7817111015319824
+Dev (test) loss: 2.4325382709503174
+---
+
+Continue training? (y/n/r/d): y
+
+---
+- Training steps (default 100): 10000
+- Learning rate (default 0.1): 0.01
+- Minibatch size (default 32): 32
+
+Parameters info:
+
+Parameters: 10281
+W1: torch.Size([6, 300])
+b1: torch.Size([300])
+W2: torch.Size([300, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.0478360652923584
+Dev (test) loss: 2.344679117202759
+---
+
+Continue training? (y/n/r/d): r
+
+---
+Training steps: 10000
+Learning rate: 0.01
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 10281
+W1: torch.Size([6, 300])
+b1: torch.Size([300])
+W2: torch.Size([300, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.513338565826416
+Dev (test) loss: 2.325338125228882
+---
+
+Continue training? (y/n/r/d): r
+
+---
+Training steps: 10000
+Learning rate: 0.01
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 10281
+W1: torch.Size([6, 300])
+b1: torch.Size([300])
+W2: torch.Size([300, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.2473866939544678
+Dev (test) loss: 2.3277103900909424
+---
+
+Continue training? (y/n/r/d): r
+
+---
+Training steps: 10000
+Learning rate: 0.01
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 10281
+W1: torch.Size([6, 300])
+b1: torch.Size([300])
+W2: torch.Size([300, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.111104965209961
+Dev (test) loss: 2.314547061920166
+---

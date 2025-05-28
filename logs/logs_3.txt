@@ -1,0 +1,148 @@
+[3J[H[2JTraining settings: 
+
+- Training steps (default 100): - Learning rate (default 0.1): - Minibatch size (default 32): 
+Parameters info:
+
+Parameters: 20481
+W1: torch.Size([6, 600])
+b1: torch.Size([600])
+W2: torch.Size([600, 27])
+b2: torch.Size([27])
+
+
+Train loss: 3.3423683643341064
+Dev (test) loss: 3.413285493850708
+---
+
+Continue training? (y/n/r): 
+---
+Training steps: 10000
+Learning rate: 0.1
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 20481
+W1: torch.Size([6, 600])
+b1: torch.Size([600])
+W2: torch.Size([600, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.7574331760406494
+Dev (test) loss: 2.9761762619018555
+---
+
+Continue training? (y/n/r): 
+---
+Training steps: 10000
+Learning rate: 0.1
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 20481
+W1: torch.Size([6, 600])
+b1: torch.Size([600])
+W2: torch.Size([600, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.7972915172576904
+Dev (test) loss: 2.795464515686035
+---
+
+Continue training? (y/n/r): 
+---
+Training steps: 10000
+Learning rate: 0.1
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 20481
+W1: torch.Size([6, 600])
+b1: torch.Size([600])
+W2: torch.Size([600, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.3231613636016846
+Dev (test) loss: 2.741366386413574
+---
+
+Continue training? (y/n/r): 
+---
+Training steps: 10000
+Learning rate: 0.1
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 20481
+W1: torch.Size([6, 600])
+b1: torch.Size([600])
+W2: torch.Size([600, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.848569631576538
+Dev (test) loss: 2.570065975189209
+---
+
+Continue training? (y/n/r): 
+---
+- Training steps (default 100): - Learning rate (default 0.1): - Minibatch size (default 32): 
+Parameters info:
+
+Parameters: 20481
+W1: torch.Size([6, 600])
+b1: torch.Size([600])
+W2: torch.Size([600, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.26220965385437
+Dev (test) loss: 2.27927827835083
+---
+
+Continue training? (y/n/r): 
+---
+Training steps: 10000
+Learning rate: 0.01
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 20481
+W1: torch.Size([6, 600])
+b1: torch.Size([600])
+W2: torch.Size([600, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.16121768951416
+Dev (test) loss: 2.2790334224700928
+---
+
+Continue training? (y/n/r): 
+---
+Training steps: 10000
+Learning rate: 0.01
+Minibatch size: 32
+
+Parameters info:
+
+Parameters: 20481
+W1: torch.Size([6, 600])
+b1: torch.Size([600])
+W2: torch.Size([600, 27])
+b2: torch.Size([27])
+
+
+Train loss: 2.418170928955078
+Dev (test) loss: 2.268404006958008
+---
+
+Continue training? (y/n/r): 
+---
